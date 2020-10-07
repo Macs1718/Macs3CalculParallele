@@ -4,7 +4,7 @@ CXXFLAGS = -std=c++11 -fPIC  -fopenmp
 ifdef DEBUG
 CXXFLAGS += -g -O0 -Wall -fbounds-check -pedantic -Weffc++
 else
-CXXFLAGS += -O3 -march=native
+CXXFLAGS += -O2 -march=native
 endif
 
 ALL=TestProduct.exe dotproduct.exe bitonic.exe bhudda.exe
