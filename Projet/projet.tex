@@ -1,0 +1,156 @@
+\documentclass[fleqn,11pt]{article}
+\usepackage[top=3cm,bottom=3cm,left=3cm,right=3cm,headsep=10pt,a4paper]{geometry} % Page margins
+
+\usepackage{graphicx} % Required for including pictures
+\graphicspath{{Pictures/}} % Specifies the directory where pictures are stored
+
+\usepackage{tikz} % Required for drawing custom shapes
+\usepackage{dsfont}
+\usepackage{enumitem} % Customize lists
+\setlist{nolistsep} % Reduce spacing between bullet points and numbered lists
+
+\usepackage{booktabs} % Required for nicer horizontal rules in tables
+\usepackage{xcolor} % Required for specifying colors by name
+\definecolor{ocre}{RGB}{243,102,25} % Define the orange color used for highlighting throughout the book
+\usepackage{microtype} % Slightly tweak font spacing for aesthetics
+%\usepackage[utf8]{inputenc} % Required for including letters with accents
+%\usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
+
+\usepackage{calc} % For simpler calculation - used for spacing the index letter headings correctly
+\usepackage{makeidx} % Required to make an index
+\makeindex % Tells LaTeX to create the files required for indexing
+\usepackage[many]{tcolorbox}
+\usepackage{listings}
+\usepackage{smartdiagram}
+\usetikzlibrary{shadows, arrows, decorations.pathmorphing, fadings, shapes.arrows, positioning, calc, shapes, fit, matrix}
+\usepackage{polyglossia}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{hyperref}
+
+\definecolor{lightblue}{RGB}{0,200,255} 
+\definecolor{paper}{RGB}{239,227,157}
+
+\pgfdeclarelayer{background}
+\pgfdeclarelayer{foreground}
+\pgfsetlayers{background,main,foreground}
+
+\lstset{%
+  basicstyle=\footnotesize,
+  frame=single,
+  keywordstyle=\color{blue},
+  language=C++,
+  commentstyle=\color{red},
+  stringstyle=\color{brown},
+  keepspaces=true,
+  showspaces=false,
+  tabsize=2
+}
+
+\title{Projet calcul parallèle -- Macs 3}
+\author{Juvigny Xavier}
+\date{Octobre 2020}
+
+\newtheorem{prop}{Propriétés }
+
+\begin{document}
+\maketitle
+
+Pour toutes les questions demandant une réponse écrite autre que le programme, écrire un fichier dans le format de votre choix (latex, word, texte, markdown, etc.) dans lequel vous mettrez vos réponses.
+
+\section*{Introduction}
+
+Vous aurez à modifier les codes sources fournis pour les paralléliser.
+Certaines questions demandent des argumentations et discussions des résultats. 
+Vous noterez vos réponses dans un fichier \verb/reponses.md/ (ou \verb/.doc/, \verb/.txt/, \verb/.tex/, \dots).
+
+En tout premier lieu, notez dans ce fichier le nombre de c{\oe}urs de calcul que vous possédez sur votre machine.
+
+Les sous-projets 1 et 3 contiennent une boucle sur \verb/nb_repet/ qui ne sert qu'à avoir des mesures de chrono plus précises. Ce ne sont pas elles qu'il faut paralléliser.
+
+Lorsque vous avez fini le projet, envoyez vos fichiers non compressés par mail à :
+\begin{center}
+\verb/xavier.juvigny@onera.fr/. 
+\end{center}
+
+Attention, pas de fichiers compressés, je ne les recevrai pas à cause du filtre de la messagerie.
+
+\section{Compter les lettres et les nombres}
+
+Le programme "StatistiqueTexte.cpp" consiste à parcourir un fichier texte pour compter le nombre de lettres (minuscules
+et majuscules), le nombre de chiffres et le nombre de caractères autres. 
+
+\begin{enumerate}
+  \item Paralléliser à l'aide de directives OpenMP le programme
+  \item Tester sur 1,2,4, 8 et 16 threads la performance du programme. Qu'en conclure ?
+\end{enumerate}
+
+\section{Orthonormalisation d'une base libre}
+
+Le programme "Orthonormalisation.cpp" génère une famille libre de vecteur puis l'orthonormalise à l'aide d'un algorithme de Gram-Schmidt modifié :
+
+\begin{algorithm}
+\caption{Calcul la base orthonormée générant la famille libre de $n$ vecteurs $\mathcal{F} = \left\{u_{1},u_{2},\ldots,u_{n}\right\}$ de dimension $d$ donnée en entrée}
+\begin{algorithmic}
+\REQUIRE $d \geq n$
+\ENSURE $\mathcal{F}$ contient en sortie la base orthonormée
+\FOR{$i \leftarrow 1$ to n}
+\FOR{$j \leftarrow 1$ to i-1}
+\STATE $u_{i} \leftarrow u_{i} - (u_{i},u_{j}).u_{j}$
+\ENDFOR
+\STATE $u_{i} \leftarrow \frac{u_{i}}{\|u_{i}\|}$
+\ENDFOR
+\end{algorithmic}
+\end{algorithm}
+
+où $(u,v)$ représente un produit scalaire.
+
+On veut paralléliser le code à l'aide de MPI.
+
+\begin{enumerate}
+  \item  Expliquer (en commentaire dans votre source si vous voulez) pourquoi il est difficile de paralléliser le code en distribuant la famille de vecteurs.
+  \item  On distribue du coup chaque vecteur de la famille sur les processeurs afin de pouvoir paralléliser l'orthonormalisation ainsi que la génération des vecteurs de la famille de vecteurs. Mettez en {\oe}uvre cette stratégie de parallélisation. On supposera que la dimension du vecteur est divisible par le nombre de processus.
+  \item Mesurez les temps pris pour la génération et l'orthonormalisation en fonction du nombre de processus pris.
+\end{enumerate}
+
+\section{Calcul d'enveloppe convexe}
+
+On veut calculer l'enveloppe convexe d'un nuage de point sur un plan. Pour cela, on utilise l'algorithme de Graham décrit
+sur le lien suivant :
+
+\url{https://fr.wikipedia.org/wiki/Parcours_de_Graham}
+
+On obtient en sortie une sous-liste de points du nuage qui définissent l'enveloppe convexe. Ces points sont rangés de manière à parcourir le polygone de l'enveloppe dans le sens direct.
+
+Le code séquentiel peut être trouvé dans le fichier "enveloppe\_convexe.cpp".
+En sortie, le code écrit un fichier de type svg (graphisme vectoriel) directement lisible de votre browser internet (Edge, Firefox, Safari, etc.) qui vous permettra de valider votre code.
+
+Afin de paralléliser le code en distribué avec MPI, on veut distribuer les sommets sur plusieurs processus puis utiliser l'algorithme suivant :
+\begin{itemize}
+\item Calculer l'enveloppe convexe des sommets locaux de chaque processus
+\item Puis en échangeant deux à deux entre les processus les enveloppes convexes locales, calcul sur chacun la fusion des deux enveloppes convexes en remarquant que l'enveloppe convexe de deux enveloppes convexes est l'enveloppe convexe de la réunion des sommets définissant les deux enveloppes convexes.
+\end{itemize}
+
+\begin{enumerate}
+  \item Dans un premier temps, mettre en {\oe}uvre l'algorithme sur deux processus;
+  \item Dans un deuxième temps, en utilisant un algorithme de type hypercube, de sorte qu'un processus
+  fusionne son enveloppe convexe avec le processus se trouvant dans la direction $d$, mettre en {\oe}uvre l'algorithme
+  sur $2^{n}$ processus.\\
+  \underline{Exemple sur 8 processus}
+\begin{algorithm}[H]
+\caption{Calcul d'une enveloppe convexe 2D sur un nuage réparti de points sur huit processus}
+\begin{algorithmic}
+\REQUIRE Huit processus
+\ENSURE En sortie, tous les processus contiennent l'enveloppe convexe
+\STATE Les processus 0 à 7 calculent l'enveloppe convexe de leur nuage de points local.
+\STATE Le processus 0 et le processus 1 fusionnent leurs enveloppes, idem pour 2 avec 3, 4 avec 5 et 6 avec 7.
+\STATE Le processus 0 et le processus 2 fusionnent leurs enveloppes, idem pour 1 avec 3, 4 avec 6 et 5 avec 7.
+\STATE Le processus 0 et le processus 4 fusionnent leurs enveloppes, idem pour 1 avec 5, 2 avec 6 et 3 avec 7. 
+\end{algorithmic}
+\end{algorithm}
+\item Calculer le speed-up de votre algorithme à volume constant de points par processus puis avec un nombre total de points constants.
+\end{enumerate}
+\end{document}
+
